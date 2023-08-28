@@ -20,6 +20,6 @@ export class GameController extends Component {
     }
 
     initListener() {
-        game.on(EVENTS.tileOnClick, tile => console.log(tile))
+        
     }
 }

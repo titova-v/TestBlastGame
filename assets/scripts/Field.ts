@@ -1,6 +1,6 @@
-import { _decorator, Component, Node, math, Prefab, instantiate, Vec3 } from 'cc';
+import { _decorator, Component, Node, math, Prefab, instantiate, Vec3, game } from 'cc';
 import { BlastCore } from './BlastCore';
-import { FIELD_MARGIN_X, FIELD_MARGIN_Y, FIELD_SIZE, MAX_FIELD_SIZE, TILES_COLORS, TILES_COLORS_COUNT, TILE_SIZE } from './gameConfig';
+import { FIELD_MARGIN_X, FIELD_MARGIN_Y, FIELD_SIZE, MAX_FIELD_SIZE, TILES_COLORS, TILES_COLORS_COUNT, TILE_SIZE, EVENTS, MIN_TILES_COUNT_IN_GROUP } from './gameConfig';
 
 const { ccclass, property } = _decorator;
 
@@ -29,6 +29,8 @@ export class Field extends Component {
         this.field = this.coreBlast.createField(this.fieldWidth, this.fieldHeight, this.tiles)
 
         this.initFieldView()
+
+        game.on(EVENTS.tileOnClick, tile => this.onTileClick(tile))
     }
 
     update(deltaTime: number) {
@@ -37,11 +39,13 @@ export class Field extends Component {
 
     addTile(tile: object) {
         const item = instantiate(this[`${tile.color}Tile`])
-        item.position = new Vec3((tile.col + .5) * TILE_SIZE.WIDTH + FIELD_MARGIN_X - this.fieldWidth * TILE_SIZE.WIDTH * .5, (tile.row + .5) * TILE_SIZE.HEIGHT + FIELD_MARGIN_Y, 0)
+        item.row = tile.row
+        item.col = tile.col
+        item.position = new Vec3((tile.col + .5) * TILE_SIZE.WIDTH + FIELD_MARGIN_X - this.fieldWidth * TILE_SIZE.WIDTH * .5, TILE_SIZE.HEIGHT*this.fieldHeight - (tile.row + .5) * TILE_SIZE.HEIGHT + FIELD_MARGIN_Y, 0)
         this.node.addChild(item)
     }
 
-    initFieldView() {
+    initFieldView(): void {
         this.field.forEach(row => {
             let coordY: number = 0
             row.forEach(cell => {
@@ -51,7 +55,7 @@ export class Field extends Component {
         })
     }
 
-    initTiles(count) {
+    initTiles(count): Array<string> {
         let tiles: Array<string> = []
         for (let index = 0; index < count; index++) {
             let color: string = TILES_COLORS[index]
@@ -59,6 +63,25 @@ export class Field extends Component {
         }
 
         return tiles
+    }
+
+    onTileClick(tile: Node) {
+        let group: Array<object> = this.coreBlast.generateGroup(this.field, this.field[tile.row][tile.col])
+
+        if (group.length >= MIN_TILES_COUNT_IN_GROUP)
+            this.destroyGroup(group)
+        else
+            this.falseTap(tile)
+    }
+
+    destroyGroup(group: Array<object>): void {
+        group.forEach(tile => {
+            this.node.children.find(child => child.row == tile.row && child.col == tile.col).removeFromParent()
+        })
+    }
+
+    falseTap(tile: Node): void {
+        
     }
 }
 
