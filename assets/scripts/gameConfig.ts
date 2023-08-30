@@ -19,5 +19,21 @@ export const DURATIONS = {
 
 export const EVENTS = {
     tileOnClick: 'tileOnClick'
-    }
+}
 
+
+/*item.position = new Vec3((tile.col + .5) * TILE_SIZE.WIDTH + FIELD_MARGIN_X - this.fieldWidth * TILE_SIZE.WIDTH * .5, TILE_SIZE.HEIGHT * this.fieldHeight + FIELD_MARGIN_Y, 0)
+this.node.addChild(item)
+
+const movingTime = this.tileMovingTime(tile.row)
+const spriteOpacity = item.getComponent(UIOpacity);
+spriteOpacity.opacity = 0
+
+tween(spriteOpacity)
+    .to(.25 * movingTime, { opacity: 255 })
+    .start()
+
+tween(item)
+    .to(movingTime, { position: new Vec3((tile.col + .5) * TILE_SIZE.WIDTH + FIELD_MARGIN_X - this.fieldWidth * TILE_SIZE.WIDTH * .5, TILE_SIZE.HEIGHT * this.fieldHeight - (tile.row + .5) * TILE_SIZE.HEIGHT + FIELD_MARGIN_Y, 0) })
+    .start()
+    }*/

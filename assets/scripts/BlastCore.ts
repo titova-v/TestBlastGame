@@ -10,23 +10,50 @@ export class BlastCore {
         for (let row = 0; row < height; row++) {
             let allRow: Array<object> = []
             for (let col = 0; col < width; col++) {
-                allRow.push({ row, col, color: colors[math.randomRangeInt(0, colors.length - 1)] })
+                allRow.push(this.createNewTile(row, col, colors))
             }
             field.push(allRow)
         }
         return field
     }
 
-    moveTiles() {
+    moveTiles(field: Array<Array<object>>): Array<Array<object>> {
+        for (let row = field.length - 1; row > -1; row--) {
+            field[row].forEach((tile, col) => {
+                if (tile == null) {
+                    let newTile: object
+                    for (let targetRow = row - 1; targetRow > -1; targetRow--) {
+                        let iterationTile = field[targetRow][col]
+                        if (iterationTile && !iterationTile.removed) {
+                            newTile = iterationTile
+                            break
+                        }
+                    }
+                    if (!newTile)
+                        return
 
+                    field[row][col] = { row, col, color: newTile.color, prevRow: newTile.row }
+                    field[newTile.row][newTile.col] = null
+                }
+            })
+        }
+
+        return field
     }
 
-    createNewTile() {
-
+    createNewTile(row: number, col: number, colors: Array<string>): object {
+        return { row, col, color: this.getRandomColor(colors) }
     }
 
-    removeTiles(tiles: Array<object>) {
+    getRandomColor(colors: Array<string>): string {
+        return colors[math.randomRangeInt(0, colors.length)]
+    }
 
+    removeTiles(field: Array<Array<object>>, tiles: Array<object>) {
+        tiles.forEach(tile => {
+            field[tile.row][tile.col] = null
+        })
+        return field
     }
 
     checkMoves(field: Array<Array<object>>): Boolean {
@@ -41,13 +68,13 @@ export class BlastCore {
         return hasMoves
     }
 
-    generateGroup(field: Array<Array<object>>, tile: object, group: Array<object> = [tile]): Array<object> {
+    findGroup(field: Array<Array<object>>, tile: object, group: Array<object> = [tile]): Array<object> {
         let siblings: Array<object> = this.findSiblingTiles(field, tile)
 
         siblings.forEach(sibling => {
             if (!this.groupContainTile(group, sibling)) {
                 group.push(sibling)
-                this.generateGroup(field, sibling, group).forEach(nextSibling => {
+                this.findGroup(field, sibling, group).forEach(nextSibling => {
                     if (!this.groupContainTile(group, nextSibling))
                         group.push(nextSibling)
                 })
