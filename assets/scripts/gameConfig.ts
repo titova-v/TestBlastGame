@@ -9,31 +9,16 @@ export const TILES_COLORS = ['blue', 'green', 'purple', 'red', 'yellow']
 
 export const MIN_TILES_COUNT_IN_GROUP = 2
 export const MAX_SHUFFLE_COUNT = 4
+export const BONUS_TILE_GROUP_SIZE = 6
+export const BONUS_ACTIVATION_RADIUS = 2
 
 export const MAX_MOVES_COUNT = 24
 export const MIN_POINTS_COUNT = 100
 
 export const DURATIONS = {
-
+    labelUpdate: .1
     }
 
 export const EVENTS = {
     tileOnClick: 'tileOnClick'
 }
-
-
-/*item.position = new Vec3((tile.col + .5) * TILE_SIZE.WIDTH + FIELD_MARGIN_X - this.fieldWidth * TILE_SIZE.WIDTH * .5, TILE_SIZE.HEIGHT * this.fieldHeight + FIELD_MARGIN_Y, 0)
-this.node.addChild(item)
-
-const movingTime = this.tileMovingTime(tile.row)
-const spriteOpacity = item.getComponent(UIOpacity);
-spriteOpacity.opacity = 0
-
-tween(spriteOpacity)
-    .to(.25 * movingTime, { opacity: 255 })
-    .start()
-
-tween(item)
-    .to(movingTime, { position: new Vec3((tile.col + .5) * TILE_SIZE.WIDTH + FIELD_MARGIN_X - this.fieldWidth * TILE_SIZE.WIDTH * .5, TILE_SIZE.HEIGHT * this.fieldHeight - (tile.row + .5) * TILE_SIZE.HEIGHT + FIELD_MARGIN_Y, 0) })
-    .start()
-    }*/

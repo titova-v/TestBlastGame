@@ -1,6 +1,7 @@
-import { _decorator, Component, Node, math, Prefab, instantiate, Vec3, game, tween, UIOpacity } from 'cc';
+import { _decorator, Component, Node, math, Prefab, instantiate, Vec3, tween, UIOpacity } from 'cc';
 import { BlastCore } from './BlastCore';
-import { FIELD_MARGIN_X, FIELD_MARGIN_Y, FIELD_SIZE, MAX_FIELD_SIZE, TILES_COLORS, TILES_COLORS_COUNT, TILE_SIZE, EVENTS, MIN_TILES_COUNT_IN_GROUP } from './gameConfig';
+import { FIELD_MARGIN_X, FIELD_MARGIN_Y, FIELD_SIZE, MAX_FIELD_SIZE, TILES_COLORS, TILES_COLORS_COUNT, TILE_SIZE } from './gameConfig';
+import { Tile } from './Tile';
 
 const { ccclass, property } = _decorator;
 
@@ -29,14 +30,6 @@ export class Field extends Component {
         this.field = this.coreBlast.createField(this.fieldWidth, this.fieldHeight, this.tiles)
 
         this.initView()
-
-        this.unlock()
-
-        game.on(EVENTS.tileOnClick, tile => this.onTileClick(tile))
-    }
-
-    update(deltaTime: number) {
-        
     }
 
     addTile(tile: object, withAnim: Boolean = false): any {
@@ -70,6 +63,10 @@ export class Field extends Component {
         })
     }
 
+    getColorGroup(tile: Node): Array<object> {
+        return this.coreBlast.findGroupByColor(this.field, this.field[tile.row][tile.col])
+    }
+
     initColors(count): Array<string> {
         let tiles: Array<string> = []
         for (let index = 0; index < count; index++) {
@@ -78,28 +75,6 @@ export class Field extends Component {
         }
 
         return tiles
-    }
-
-    onTileClick(tile: Node) {
-        if (this.isLocked())
-            return
-
-        this.lock()
-        let group: Array<object> = this.coreBlast.findGroup(this.field, this.field[tile.row][tile.col])
-
-        if (group.length >= MIN_TILES_COUNT_IN_GROUP) {
-            this.destroyGroup(group)
-            this.field = this.coreBlast.moveTiles(this.field)
-            this.moveTilesNodes()
-
-
-        }
-        else {
-            this.falseTap(tile)
-            this.unlock()
-        }
-
-        //this.unlock()
     }
 
     destroyGroup(group: Array<object>): void {
@@ -117,7 +92,7 @@ export class Field extends Component {
             .start()
     }
 
-    falseTap(tile: Node): void {
+    blinkTile(tile: Node): void {
         const spriteOpacity = tile.getComponent(UIOpacity);
         tween(spriteOpacity)
             .to(.15, { opacity: 175 }, {easing: 'sineInOut'})
@@ -127,23 +102,56 @@ export class Field extends Component {
             .start()
     }
 
-    moveTilesNodes(): void {
-        let allMoves = []
-        for (let row = this.field.length - 1; row > -1; row--) {
-            this.field[row].forEach((tile, col) => {             
-                if (tile && tile.prevRow != undefined) {
-                    const tileNode = this.node.children.find(child => child.row == tile.prevRow && child.col == col)
-                    tileNode.prevRow = tile.prevRow
-                    delete tile.prevRow
-                    tileNode.row = row
-                    allMoves.push(this.moveTile(tileNode))
-                }     
-            })
-        }
+    moveTilesNodes() {
+        return new Promise(resolve => {
+            let allMoves = []
+            for (let row = this.field.length - 1; row > -1; row--) {
+                this.field[row].forEach((tile, col) => {
+                    if (tile && tile.prevRow != undefined) {
+                        const tileNode = this.node.children.find(child => child.row == tile.prevRow && child.col == col)
+                        tileNode.prevRow = tile.prevRow
+                        delete tile.prevRow
+                        tileNode.row = row
+                        allMoves.push(this.moveTile(tileNode))
+                    }
+                })
+            }
 
-        Promise.all(allMoves).then(this.fillEmptyCells.bind(this)).then(
-            () => this.unlock()
-        )
+            Promise.all(allMoves).then(resolve)
+        })
+    }
+
+    createBonusTile(tile: Node) {
+        tile.bonus = true
+        this.field[tile.row][tile.col].bonus = true
+
+        this.node.children.find(child => child.row == tile.row && child.col == tile.col).getComponent(Tile).makeBonus()
+    }
+
+    getColumnGroup(tile: Node) {
+        return this.coreBlast.findGroupInColumn(this.field, this.field[tile.row][tile.col])
+    }
+
+    getTilesGroupByRadius(tile: Node) {
+
+    }
+
+    makeMove(group) {
+        this.destroyGroup(group)
+
+        return new Promise(resolve => {
+            this.moveExistingTiles()
+                .then(this.fillEmptyCells.bind(this))
+                .then(resolve)
+        })       
+    }
+
+    moveExistingTiles() {
+        this.field = this.coreBlast.moveTiles(this.field)
+
+        return new Promise(resolve => {
+            this.moveTilesNodes().then(resolve)
+        })
     }
 
     moveTile(tile: Node) {
@@ -187,19 +195,6 @@ export class Field extends Component {
 
     getTileMovingTime(path: number): number {
         return .075*path
-    }
-
-
-    lock(): void {
-        this.locked = true
-    }
-
-    unlock(): void {
-        this.locked = false
-    }
-
-    isLocked(): Boolean {
-        return this.locked
     }
 }
 

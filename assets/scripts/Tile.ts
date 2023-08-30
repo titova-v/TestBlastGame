@@ -1,19 +1,15 @@
-import { _decorator, Component, Node, game } from 'cc';
+import { _decorator, Component, Node, game, Sprite } from 'cc';
 import { EVENTS } from './gameConfig';
 const { ccclass, property } = _decorator;
 
 @ccclass('Tile')
 export class Tile extends Component {
-    start() {
-
-    }
-
     onLoad() {
         this.initListener()
     }
 
-    update(deltaTime: number) {
-
+    makeBonus() {
+        this.getComponent(Sprite).grayscale = true
     }
 
     initListener() {

@@ -68,19 +68,26 @@ export class BlastCore {
         return hasMoves
     }
 
-    findGroup(field: Array<Array<object>>, tile: object, group: Array<object> = [tile]): Array<object> {
+    findGroupByColor(field: Array<Array<object>>, tile: object, group: Array<object> = [tile]): Array<object> {
         let siblings: Array<object> = this.findSiblingTiles(field, tile)
 
         siblings.forEach(sibling => {
             if (!this.groupContainTile(group, sibling)) {
                 group.push(sibling)
-                this.findGroup(field, sibling, group).forEach(nextSibling => {
+                this.findGroupByColor(field, sibling, group).forEach(nextSibling => {
                     if (!this.groupContainTile(group, nextSibling))
                         group.push(nextSibling)
                 })
             }
         })
 
+        return group
+    }
+
+    findGroupInColumn(field: Array<Array<object>>, tile: object, group: Array<object> = [tile]): Array<object> {
+        field.forEach(row => {
+            group.push(row[tile.col])
+        })
         return group
     }
 
