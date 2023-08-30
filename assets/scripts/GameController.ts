@@ -23,7 +23,7 @@ export class GameController extends Component {
 
     initListener() {
         game.on(EVENTS.tileOnClick, tile => this.onTileClick(tile))
-        game.on(EVENTS.bombOnClick, () => this.activateBomb())
+        game.on(EVENTS.bombOnClick, () => this.switchBomb())
     }
 
     onTileClick(tile: Node) {
@@ -68,6 +68,7 @@ export class GameController extends Component {
         this.bomb.updateLabel()
     }
 
+    // проверка наличия ходов и решафл
     checkEnableMoves() {
         if (this.shufflesCount >= MAX_SHUFFLE_COUNT)
             this.showFailScene()
@@ -77,6 +78,7 @@ export class GameController extends Component {
         }
     }
 
+    // проверка наличия ходов и достижения цели игры
     checkGameProgress() {
         if (this.score.movesCount == 0 && this.score.scoreCount < MIN_POINTS_COUNT) {
             this.showFailScene()
@@ -90,15 +92,18 @@ export class GameController extends Component {
             return true
     }
 
+    // переключение сцены в случае фейла
     showFailScene() {
         director.loadScene('failScene')
     }
 
+    // переключение сцены в случае выигрыша
     showWinScene() {
         director.loadScene('winScene')
     }
 
-    activateBomb() {
+    // вкл/выкл активации бомбы
+    switchBomb() {
         if (this.bomb.count)
             this.bomb.active = !this.bomb.active
         
@@ -108,12 +113,14 @@ export class GameController extends Component {
             this.stopBombIconAnimation()
     }
 
+    // принудительное отключение бомбы (после выполнения хода)
     deactivateBomb() {
         this.bomb.active = false
 
         this.stopBombIconAnimation()
     }
 
+    // анимация иконки бомбы
     startBombIconAnimation() {
         if (!this.bomb.iconAnimation) {
             let bombIcon = this.bomb.icon
@@ -137,10 +144,12 @@ export class GameController extends Component {
         this.field.blinkTile(tile)
     }
 
+    // блокировка управления
     lockCtrl(): void {
         this.locked = true
     }
 
+    // разблокировка управления
     unlockCtrl(): void {
         this.locked = false
     }

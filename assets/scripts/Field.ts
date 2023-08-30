@@ -33,6 +33,7 @@ export class Field extends Component {
         this.initView()
     }
 
+    // добавление спрайта тайла на поле
     addTile(tile: object, withAnim: Boolean = false): any {
         const item = instantiate(this[`${tile.color}Tile`])
         item.row = tile.row
@@ -49,13 +50,14 @@ export class Field extends Component {
                 .start()
 
             item.position = new Vec3((tile.col + .5) * TILE_SIZE.WIDTH + FIELD_MARGIN_X - this.fieldWidth * TILE_SIZE.WIDTH * .5, TILE_SIZE.HEIGHT * this.fieldHeight + FIELD_MARGIN_Y, 0)
-            item.prevRow = 0// item.row - 1
+            item.prevRow = 0
 
             return this.moveTile(item)
         } else
             return Promise.resolve()
     }
 
+    // отрисовка пол€
     initView(): void {
         this.field.forEach(row => {
             row.forEach(cell => {
@@ -64,10 +66,12 @@ export class Field extends Component {
         })
     }
 
+    // генераци€ группы тайлов одного цвета
     getColorGroup(tile: Node): Array<object> {
         return this.coreBlast.findGroupByColor(this.field, this.field[tile.row][tile.col])
     }
 
+    // определение палитры цветов тайлов
     initColors(count): Array<string> {
         let tiles: Array<string> = []
         for (let index = 0; index < count; index++) {
@@ -78,6 +82,7 @@ export class Field extends Component {
         return tiles
     }
 
+    // удаление группы тайлов
     destroyGroup(group: Array<object>): void {
         group.forEach(tile => {
             const tileNode = this.node.children.find(child => child.row == tile.row && child.col == tile.col)
@@ -86,6 +91,7 @@ export class Field extends Component {
         this.field = this.coreBlast.removeTiles(this.field, group)
     }
 
+    // удаление спрайта тайла с анимацией
     removeTileNode(tile: Node) {
         tween(tile)
             .to(.1, { scale: new Vec3(0, 0, 0) }, {easing: 'quadOut'})
@@ -93,6 +99,7 @@ export class Field extends Component {
             .start()
     }
 
+    // анимаци€ мигани€ тайла
     blinkTile(tile: Node): void {
         const spriteOpacity = tile.getComponent(UIOpacity);
         tween(spriteOpacity)
@@ -103,6 +110,7 @@ export class Field extends Component {
             .start()
     }
 
+    // перемещение тайлов на пустые €чейки
     moveTilesNodes() {
         return new Promise(resolve => {
             let allMoves = []
@@ -122,6 +130,7 @@ export class Field extends Component {
         })
     }
 
+    // создание бонусного тайла
     createBonusTile(tile: Node) {
         tile.bonus = true
         this.field[tile.row][tile.col].bonus = true
@@ -129,18 +138,22 @@ export class Field extends Component {
         this.node.children.find(child => child.row == tile.row && child.col == tile.col).getComponent(Tile).makeBonus()
     }
 
+    // генераци€ группы тайлов из одного столбца (дл€ бонусного тайла)
     getColumnGroup(tile: Node): Array<object> {
         return this.coreBlast.findGroupInColumn(this.field, this.field[tile.row][tile.col])
     }
 
+    // генераци€ группы тайлов в радиусе BONUS_ACTIVATION_RADIUS (дл€ бомбы)
     getTilesGroupByRadius(tile: Node): Array<object> {
         return this.coreBlast.findGroupByRadius(this.field, this.field[tile.row][tile.col], BONUS_ACTIVATION_RADIUS)
     }
-    
+
+    // проверка наличи€ ходов
     checkMoves(): Boolean {
         return this.coreBlast.checkMoves(this.field)
     }
 
+    // выполнение хода (разрушение тайлов -> передвижение -> заполнение пробелов)
     makeMove(group) {
         this.destroyGroup(group)
 
@@ -151,6 +164,7 @@ export class Field extends Component {
         })       
     }
 
+    // передвижение существующих тайлов
     moveExistingTiles() {
         this.field = this.coreBlast.moveTiles(this.field)
 
@@ -159,6 +173,7 @@ export class Field extends Component {
         })
     }
 
+    // анимаци€ передвижени€ тайлов
     moveTile(tile: Node) {
         const path = tile.row - tile.prevRow
         const position = new Vec3(tile.position.x, TILE_SIZE.HEIGHT * this.fieldHeight - (tile.row + .5) * TILE_SIZE.HEIGHT + FIELD_MARGIN_Y, 0)
@@ -169,6 +184,7 @@ export class Field extends Component {
             .start())
     }
 
+    // заполнение пустых €чеек новыми тайлами
     fillEmptyCells() {
         return new Promise(resolve => {
             let allMoves: Array<any> = []
@@ -198,6 +214,7 @@ export class Field extends Component {
         })
     }
 
+    // перемешивание тайлов
     shuffle() {
         this.field = this.coreBlast.shuffle(this.field)
         
@@ -206,6 +223,7 @@ export class Field extends Component {
         this.initView()
     }
 
+    // вычисление времени анимации передвижени€ тайла в соотв-вии с длиной пути
     getTileMovingTime(path: number): number {
         return DURATIONS.tileMoving*path
     }

@@ -1,6 +1,7 @@
 import { math } from 'cc';
 
 export class BlastCore {
+    // перемешивание
     shuffle(field: Array<Array<object>>): Array<Array<object>> {
         field.sort(() => math.random() - 0.5);
         field.forEach((allRow, row) => {
@@ -11,6 +12,7 @@ export class BlastCore {
         return field
     }
 
+      // создание игрового поля
     createField(width: number, height: number, colors: Array<string>): Array<Array<object>> {
         let field: Array<Array<object>> = []
         for (let row = 0; row < height; row++) {
@@ -23,6 +25,7 @@ export class BlastCore {
         return field
     }
 
+    // перемещение верхних тайлов на пустые места
     moveTiles(field: Array<Array<object>>): Array<Array<object>> {
         for (let row = field.length - 1; row > -1; row--) {
             field[row].forEach((tile, col) => {
@@ -48,6 +51,7 @@ export class BlastCore {
         return field
     }
 
+    // создание нового тайла рандомного цвета
     createNewTile(row: number, col: number, colors: Array<string>): object {
         return { row, col, color: this.getRandomColor(colors) }
     }
@@ -56,6 +60,7 @@ export class BlastCore {
         return colors[math.randomRangeInt(0, colors.length)]
     }
 
+    // удаление группы тайлов
     removeTiles(field: Array<Array<object>>, tiles: Array<object>): Array<Array<object>> {
         tiles.forEach(tile => {
             field[tile.row][tile.col] = null
@@ -63,6 +68,7 @@ export class BlastCore {
         return field
     }
 
+    // проверка наличия ходов
     checkMoves(field: Array<Array<object>>): Boolean {
         let hasMoves: Boolean = false
 
@@ -75,6 +81,7 @@ export class BlastCore {
         return hasMoves
     }
 
+    // поиск группы тайлов по цвету
     findGroupByColor(field: Array<Array<object>>, tile: object, group: Array<object> = [tile]): Array<object> {
         let siblings: Array<object> = this.findSiblingTiles(field, tile)
 
@@ -91,6 +98,7 @@ export class BlastCore {
         return group
     }
 
+    // поиск группы тайлов по номеру колонки
     findGroupInColumn(field: Array<Array<object>>, tile: object, group: Array<object> = [tile]): Array<object> {
         field.forEach(row => {
             group.push(row[tile.col])
@@ -98,6 +106,7 @@ export class BlastCore {
         return group
     }
 
+    // поиск группы тайлов в заданном радиусе
     findGroupByRadius(field: Array<Array<object>>, tile: object, radius: number, group: Array<object> = [tile]): Array<object>  {
         field.forEach(row => {
             row.forEach(cell => {
@@ -109,10 +118,12 @@ export class BlastCore {
         return group
     }
 
+    // проверка вхождения тайла в существующую группу
     groupContainTile(group: Array<object>, tile: object): Boolean {
         return !!group.find(cell => cell.row == tile.row && cell.col == tile.col)
     }
 
+    // поиск соседних тайлов такого же цвета
     findSiblingTiles(field: Array<Array<object>>, tile: object): Array<object> {
         let siblings: Array<object> = []
         let tileColor: string = field[tile.row][tile.col].color
