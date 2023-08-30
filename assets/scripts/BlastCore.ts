@@ -1,8 +1,14 @@
 import { math } from 'cc';
 
 export class BlastCore {
-    shuffle(count: number) {
-
+    shuffle(field: Array<Array<object>>): Array<Array<object>> {
+        field.sort(() => math.random() - 0.5);
+        field.forEach((allRow, row) => {
+            allRow.forEach((cell, col) => {
+                Object.assign(cell, {row, col})
+            })
+        })
+        return field
     }
 
     createField(width: number, height: number, colors: Array<string>): Array<Array<object>> {
@@ -21,19 +27,20 @@ export class BlastCore {
         for (let row = field.length - 1; row > -1; row--) {
             field[row].forEach((tile, col) => {
                 if (tile == null) {
-                    let newTile: object
+                    let movingTile: object
                     for (let targetRow = row - 1; targetRow > -1; targetRow--) {
                         let iterationTile = field[targetRow][col]
                         if (iterationTile && !iterationTile.removed) {
-                            newTile = iterationTile
+                            movingTile = iterationTile
                             break
                         }
                     }
-                    if (!newTile)
+                    if (!movingTile)
                         return
 
-                    field[row][col] = { row, col, color: newTile.color, prevRow: newTile.row }
-                    field[newTile.row][newTile.col] = null
+                    field[row][col] = { row, col, color: movingTile.color, prevRow: movingTile.row }
+                    movingTile.bonus && (field[row][col].bonus = true)
+                    field[movingTile.row][movingTile.col] = null
                 }
             })
         }
@@ -49,7 +56,7 @@ export class BlastCore {
         return colors[math.randomRangeInt(0, colors.length)]
     }
 
-    removeTiles(field: Array<Array<object>>, tiles: Array<object>) {
+    removeTiles(field: Array<Array<object>>, tiles: Array<object>): Array<Array<object>> {
         tiles.forEach(tile => {
             field[tile.row][tile.col] = null
         })
@@ -61,7 +68,7 @@ export class BlastCore {
 
         field.forEach(row => {
             row.forEach(cell => {
-
+                this.findSiblingTiles(field, cell).length && (hasMoves = true)
             })
         })
 
@@ -87,6 +94,17 @@ export class BlastCore {
     findGroupInColumn(field: Array<Array<object>>, tile: object, group: Array<object> = [tile]): Array<object> {
         field.forEach(row => {
             group.push(row[tile.col])
+        })
+        return group
+    }
+
+    findGroupByRadius(field: Array<Array<object>>, tile: object, radius: number, group: Array<object> = [tile]): Array<object>  {
+        field.forEach(row => {
+            row.forEach(cell => {
+                if (math.bits.abs(cell.row - tile.row) < radius && math.bits.abs(cell.col - tile.col) < radius) {
+                    group.push(cell)
+                }
+            })
         })
         return group
     }

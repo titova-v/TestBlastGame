@@ -8,17 +8,20 @@ export const TILES_COLORS_COUNT = 5
 export const TILES_COLORS = ['blue', 'green', 'purple', 'red', 'yellow']
 
 export const MIN_TILES_COUNT_IN_GROUP = 2
-export const MAX_SHUFFLE_COUNT = 4
+export const MAX_SHUFFLE_COUNT = 2
 export const BONUS_TILE_GROUP_SIZE = 6
 export const BONUS_ACTIVATION_RADIUS = 2
+export const BOMB_COUNT = 1
 
 export const MAX_MOVES_COUNT = 24
 export const MIN_POINTS_COUNT = 100
 
 export const DURATIONS = {
-    labelUpdate: .1
-    }
+    labelUpdate: .1,
+    tileMoving: .075
+}
 
 export const EVENTS = {
-    tileOnClick: 'tileOnClick'
+    tileOnClick: 'tileOnClick',
+    bombOnClick: 'bombOnClick'
 }

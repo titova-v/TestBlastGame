@@ -1,7 +1,8 @@
-import { _decorator, Component, Node, game, Label, tween } from 'cc';
+import { _decorator, Component, Node, game, Label, tween, Vec3 } from 'cc';
 import { DURATIONS, EVENTS, MIN_POINTS_COUNT, MIN_TILES_COUNT_IN_GROUP, BONUS_TILE_GROUP_SIZE } from './gameConfig';
 import { Field } from './Field';
 import { Score } from './Score';
+import { Bomb } from './Bomb';
 const { ccclass, property } = _decorator;
 
 
@@ -11,6 +12,8 @@ export class GameController extends Component {
     field: Field
     @property(Score)
     score: Score
+    @property(Bomb)
+    bomb: Bomb
 
     onLoad() {
         this.initListener()
@@ -20,6 +23,7 @@ export class GameController extends Component {
 
     initListener() {
         game.on(EVENTS.tileOnClick, tile => this.onTileClick(tile))
+        game.on(EVENTS.bombOnClick, () => this.activateBomb())
     }
 
     onTileClick(tile: Node) {
@@ -29,19 +33,28 @@ export class GameController extends Component {
         this.lockCtrl()
         let group: Array<object> = this.field.getColorGroup(tile)
         let tilesCount: number = group.length
+        let isBomb: Boolean = this.bomb.active
 
-        if (tile.bonus) {
+        if (isBomb) {
+            group = this.field.getTilesGroupByRadius(tile)
+            this.updateBombsCount()
+            this.deactivateBomb()
+        } else if (tile.bonus) {
             group = this.field.getColumnGroup(tile)
             tilesCount = group.length
         } else if (tilesCount >= BONUS_TILE_GROUP_SIZE) {
             group = group.filter(cell => !(cell.col == tile.col && cell.row == tile.row))
             this.field.createBonusTile(tile)
-        }
+        } else
+            group = group.filter(cell => !cell.bonus)
 
-        if (tilesCount >= MIN_TILES_COUNT_IN_GROUP) {
+        if (isBomb || tilesCount >= MIN_TILES_COUNT_IN_GROUP) {
             this.field.makeMove(group).then(() => {
-                if (this.checkGameProgress())
+                if (this.checkGameProgress()) {
+                    if (!this.field.checkMoves())
+                        this.field.shuffle()
                     this.unlockCtrl()
+                }
             })
             this.score.updateLabels(tilesCount)
         }
@@ -49,6 +62,11 @@ export class GameController extends Component {
             this.falseMove(tile)
             this.unlockCtrl()
         }
+    }
+
+    updateBombsCount() {
+        this.bomb.decrementBombs()
+        this.bomb.updateLabel()
     }
 
     checkGameProgress() {
@@ -70,6 +88,41 @@ export class GameController extends Component {
 
     showWinScene() {
 
+    }
+
+    activateBomb() {
+        if (this.bomb.count)
+            this.bomb.active = !this.bomb.active
+        
+        if (this.bomb.active)
+            this.startBombIconAnimation()
+        else
+            this.stopBombIconAnimation()
+    }
+
+    deactivateBomb() {
+        this.bomb.active = false
+
+        this.stopBombIconAnimation()
+    }
+
+    startBombIconAnimation() {
+        if (!this.bomb.iconAnimation) {
+            let bombIcon = this.bomb.icon
+            let bombScale = bombIcon.scale.x
+            bombIcon.defaultScale = new Vec3(bombScale, bombScale, bombScale)
+            this.bomb.iconAnimation = tween(bombIcon)
+                .to(.15, { scale: new Vec3(bombScale * 1.1, bombScale * 1.1, bombScale * 1.1) }, {easing: 'sineOutIn'})
+                .to(.15, { scale: bombIcon.defaultScale }, { easing: 'sineOutIn' })
+                .union()
+                .repeatForever()
+        }
+        this.bomb.iconAnimation.start()
+    }
+
+    stopBombIconAnimation() {
+        this.bomb.iconAnimation && this.bomb.iconAnimation.stop()
+        this.bomb.icon.scale = this.bomb.icon.defaultScale
     }
 
     falseMove(tile: Node) {

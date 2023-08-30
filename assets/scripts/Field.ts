@@ -1,6 +1,6 @@
 import { _decorator, Component, Node, math, Prefab, instantiate, Vec3, tween, UIOpacity } from 'cc';
 import { BlastCore } from './BlastCore';
-import { FIELD_MARGIN_X, FIELD_MARGIN_Y, FIELD_SIZE, MAX_FIELD_SIZE, TILES_COLORS, TILES_COLORS_COUNT, TILE_SIZE } from './gameConfig';
+import { BONUS_ACTIVATION_RADIUS, DURATIONS, FIELD_MARGIN_X, FIELD_MARGIN_Y, FIELD_SIZE, MAX_FIELD_SIZE, TILES_COLORS, TILES_COLORS_COUNT, TILE_SIZE } from './gameConfig';
 import { Tile } from './Tile';
 
 const { ccclass, property } = _decorator;
@@ -128,12 +128,16 @@ export class Field extends Component {
         this.node.children.find(child => child.row == tile.row && child.col == tile.col).getComponent(Tile).makeBonus()
     }
 
-    getColumnGroup(tile: Node) {
+    getColumnGroup(tile: Node): Array<object> {
         return this.coreBlast.findGroupInColumn(this.field, this.field[tile.row][tile.col])
     }
 
-    getTilesGroupByRadius(tile: Node) {
-
+    getTilesGroupByRadius(tile: Node): Array<object> {
+        return this.coreBlast.findGroupByRadius(this.field, this.field[tile.row][tile.col], BONUS_ACTIVATION_RADIUS)
+    }
+    
+    checkMoves(): Boolean {
+        return this.coreBlast.checkMoves(this.field)
     }
 
     makeMove(group) {
@@ -193,8 +197,16 @@ export class Field extends Component {
         })
     }
 
+    shuffle() {
+        this.field = this.coreBlast.shuffle(this.field)
+        
+        this.node.removeAllChildren()
+
+        this.initView()
+    }
+
     getTileMovingTime(path: number): number {
-        return .075*path
+        return DURATIONS.tileMoving*path
     }
 }
 
