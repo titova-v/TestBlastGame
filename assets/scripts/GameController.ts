@@ -1,5 +1,5 @@
-import { _decorator, Component, Node, game, Label, tween, Vec3 } from 'cc';
-import { DURATIONS, EVENTS, MIN_POINTS_COUNT, MIN_TILES_COUNT_IN_GROUP, BONUS_TILE_GROUP_SIZE } from './gameConfig';
+import { _decorator, Component, Node, game, Label, tween, Vec3, director } from 'cc';
+import { DURATIONS, EVENTS, MIN_POINTS_COUNT, MIN_TILES_COUNT_IN_GROUP, BONUS_TILE_GROUP_SIZE, MAX_SHUFFLE_COUNT } from './gameConfig';
 import { Field } from './Field';
 import { Score } from './Score';
 import { Bomb } from './Bomb';
@@ -15,10 +15,10 @@ export class GameController extends Component {
     @property(Bomb)
     bomb: Bomb
 
+    private shufflesCount: number = 0
+
     onLoad() {
         this.initListener()
-
-        //game.addPersistRootNode(this.node)
     }
 
     initListener() {
@@ -51,8 +51,7 @@ export class GameController extends Component {
         if (isBomb || tilesCount >= MIN_TILES_COUNT_IN_GROUP) {
             this.field.makeMove(group).then(() => {
                 if (this.checkGameProgress()) {
-                    if (!this.field.checkMoves())
-                        this.field.shuffle()
+                    this.checkEnableMoves()
                     this.unlockCtrl()
                 }
             })
@@ -69,6 +68,15 @@ export class GameController extends Component {
         this.bomb.updateLabel()
     }
 
+    checkEnableMoves() {
+        if (this.shufflesCount >= MAX_SHUFFLE_COUNT)
+            this.showFailScene()
+        else if (!this.field.checkMoves()) {
+            this.field.shuffle()
+            this.shufflesCount++
+        }
+    }
+
     checkGameProgress() {
         if (this.score.movesCount == 0 && this.score.scoreCount < MIN_POINTS_COUNT) {
             this.showFailScene()
@@ -83,11 +91,11 @@ export class GameController extends Component {
     }
 
     showFailScene() {
-       // game.addPersistRootNode()
+        director.loadScene('failScene')
     }
 
     showWinScene() {
-
+        director.loadScene('winScene')
     }
 
     activateBomb() {

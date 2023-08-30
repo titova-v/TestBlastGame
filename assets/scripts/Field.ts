@@ -20,9 +20,10 @@ export class Field extends Component {
 
     private fieldWidth: number = Math.min(FIELD_SIZE.WIDTH, MAX_FIELD_SIZE.WIDTH)
     private fieldHeight: number = Math.min(FIELD_SIZE.HEIGHT, MAX_FIELD_SIZE.HEIGHT)
-    coreBlast = new BlastCore()
-    tiles: Array<string>
+    private tiles: Array<string>
     private field: Array<Array<object>>
+
+    coreBlast = new BlastCore()
 
     start() {
         this.tiles = this.initColors(TILES_COLORS_COUNT)

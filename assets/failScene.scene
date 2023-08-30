@@ -1,7 +1,7 @@
 [
   {
     "__type__": "cc.SceneAsset",
-    "_name": "winScene",
+    "_name": "failScene",
     "_objFlags": 0,
     "_native": "",
     "scene": {
@@ -10,7 +10,7 @@
   },
   {
     "__type__": "cc.Scene",
-    "_name": "winScene",
+    "_name": "failScene",
     "_objFlags": 0,
     "_parent": null,
     "_children": [
@@ -52,7 +52,7 @@
     "_globals": {
       "__id__": 12
     },
-    "_id": "388fc029-a8ea-4e55-b2c1-3394132d6358"
+    "_id": "7ddf7c15-e34d-4793-97a5-c03b5b796ec5"
   },
   {
     "__type__": "cc.Node",
@@ -203,7 +203,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "textWin",
+    "_name": "textFail",
     "_objFlags": 0,
     "_parent": {
       "__id__": 2
@@ -259,7 +259,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 632.06,
+      "width": 761.73,
       "height": 93.24
     },
     "_anchorPoint": {
@@ -288,7 +288,7 @@
       "b": 255,
       "a": 255
     },
-    "_string": "Ура, это победа!",
+    "_string": "Ой, все, ты проиграл",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 64,
