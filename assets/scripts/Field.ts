@@ -21,14 +21,14 @@ export class Field extends Component {
     private fieldWidth: number = Math.min(FIELD_SIZE.WIDTH, MAX_FIELD_SIZE.WIDTH)
     private fieldHeight: number = Math.min(FIELD_SIZE.HEIGHT, MAX_FIELD_SIZE.HEIGHT)
     private tiles: Array<string>
-    private field: Array<Array<object>>
+    private field: Array<object>
 
-    coreBlast = new BlastCore()
+    coreBlast = new BlastCore({ width: this.fieldWidth, height: this.fieldHeight })
 
     start() {
         this.tiles = this.initColors(TILES_COLORS_COUNT)
 
-        this.field = this.coreBlast.createField(this.fieldWidth, this.fieldHeight, this.tiles)
+        this.field = this.coreBlast.createField(this.tiles)
 
         this.initView()
     }
@@ -59,16 +59,14 @@ export class Field extends Component {
 
     // отрисовка пол€
     initView(): void {
-        this.field.forEach(row => {
-            row.forEach(cell => {
-                this.addTile(cell)
-            })
-        })
+        this.field.forEach(cell => this.addTile(cell))
     }
 
     // генераци€ группы тайлов одного цвета
     getColorGroup(tile: Node): Array<object> {
-        return this.coreBlast.findGroupByColor(this.field, this.field[tile.row][tile.col])
+        const cell = this.field.find(child => child.row == tile.row && child.col == tile.col)
+
+        return this.coreBlast.findGroupByColor(this.field, cell)
     }
 
     // определение палитры цветов тайлов
@@ -90,8 +88,10 @@ export class Field extends Component {
             const tileNode = this.node.children.find(child => child.row == tile.row && child.col == tile.col)
             removingTiles.push(this.removeTileNode(tileNode))
         })
+       
+        this.field = this.coreBlast.removeTiles(this.field, group)
 
-        return new Promise(resolve => Promise.all(removingTiles).then(() => {this.field = this.coreBlast.removeTiles(this.field, group)}).then(resolve))
+        return new Promise(resolve => Promise.all(removingTiles).then(resolve))
     }
 
     // удаление спрайта тайла с анимацией
@@ -122,42 +122,26 @@ export class Field extends Component {
             .start()
     }
 
-    // перемещение тайлов на пустые €чейки
-    moveTilesNodes(): Promise<any> {
-        return new Promise(resolve => {
-            let allMoves = []
-            for (let row = this.field.length - 1; row > -1; row--) {
-                this.field[row].forEach((tile, col) => {
-                    if (tile && tile.prevRow != undefined) {
-                        const tileNode = this.node.children.find(child => child.row == tile.prevRow && child.col == col)
-                        tileNode.prevRow = tile.prevRow
-                        delete tile.prevRow
-                        tileNode.row = row
-                        allMoves.push(this.moveTile(tileNode))
-                    }
-                })
-            }
-
-            Promise.all(allMoves).then(resolve)
-        })
-    }
-
     // создание бонусного тайла
     createBonusTile(tile: Node): void {
         tile.bonus = true
-        this.field[tile.row][tile.col].bonus = true
+        this.field.find(child => child.col == tile.col && child.row == tile.row).bonus = true
 
         this.node.children.find(child => child.row == tile.row && child.col == tile.col).getComponent(Tile).makeBonus()
     }
 
     // генераци€ группы тайлов из одного столбца (дл€ бонусного тайла)
     getColumnGroup(tile: Node): Array<object> {
-        return this.coreBlast.findGroupInColumn(this.field, this.field[tile.row][tile.col])
+        const cell = this.field.find(child => child.row == tile.row && child.col == tile.col)
+
+        return this.coreBlast.findGroupInColumn(this.field, cell)
     }
 
     // генераци€ группы тайлов в радиусе BONUS_ACTIVATION_RADIUS (дл€ бомбы)
     getTilesGroupByRadius(tile: Node): Array<object> {
-        return this.coreBlast.findGroupByRadius(this.field, this.field[tile.row][tile.col], BONUS_ACTIVATION_RADIUS)
+        const cell = this.field.find(child => child.row == tile.row && child.col == tile.col)
+
+        return this.coreBlast.findGroupByRadius(this.field, cell, BONUS_ACTIVATION_RADIUS)
     }
 
     // проверка наличи€ ходов
@@ -184,14 +168,36 @@ export class Field extends Component {
         })
     }
 
+    // перемещение тайлов на пустые €чейки
+    moveTilesNodes(): Promise<any> {
+        return new Promise(resolve => {
+            let allMoves = []
+
+            this.field.reverse().forEach(tile => {
+                if (tile.prevRow != undefined) {
+                    const tileNode = this.node.children.find(child => child.row == tile.prevRow && child.col == tile.col)
+                    tileNode.prevRow = tile.prevRow
+                    delete tile.prevRow
+                    tileNode.row = tile.row
+                    allMoves.push(this.moveTile(tileNode))
+                }
+            })
+
+            this.field.reverse()
+
+            Promise.all(allMoves).then(resolve)
+        })
+    }
+
     // анимаци€ передвижени€ тайлов
     moveTile(tile: Node): Promise<any> {
         const path = tile.row - tile.prevRow
         const position = new Vec3(tile.position.x, TILE_SIZE.HEIGHT * this.fieldHeight - (tile.row + .5) * TILE_SIZE.HEIGHT + FIELD_MARGIN_Y, 0)
-
+   
         return new Promise(resolve => tween(tile)
             .to(this.getTileMovingTime(path), {position})
-            .call(() => { delete tile.prevRow }).call(resolve)
+            .call(() => { delete tile.prevRow })
+            .call(resolve)
             .start())
     }
 
@@ -201,18 +207,20 @@ export class Field extends Component {
             let allMoves: Array<any> = []
             let delayIndex = 0
 
-            for (let row = this.field.length - 1; row > -1; row--) {
+            for (let row = this.fieldHeight - 1; row > -1; row--) {
                 let rowHasEmptyTiles: Boolean = false
 
-                this.field[row].forEach((cell, col) => {
-                    if (cell == null) {
+                this.field.filter(child => child.row == row).forEach(cell => {
+                    if (cell.removed) {
                         rowHasEmptyTiles = true
                         allMoves.push(new Promise(movingResolve =>
                             tween(this.node)
                                 .delay(this.getTileMovingTime(delayIndex))
                                 .call(() => {
-                                    this.field[row][col] = this.coreBlast.createNewTile(row, col, this.tiles)
-                                    this.addTile(this.field[row][col], true).then(movingResolve)
+                                    let newCell = this.coreBlast.createNewTile(cell.row, cell.col, this.tiles)
+                                    let cellIdx = this.field.indexOf(cell)
+                                    this.field[cellIdx] = newCell
+                                    this.addTile(newCell, true).then(movingResolve)
                                 })
                                 .start()))
                         }

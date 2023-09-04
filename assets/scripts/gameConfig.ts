@@ -18,7 +18,7 @@ export const MIN_POINTS_COUNT = 100
 
 export const DURATIONS = {
     labelUpdate: .1,
-    tileHide: .1,
+    tileHide: .2,
     tileMoving: .075
 }
 

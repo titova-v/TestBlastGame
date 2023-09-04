@@ -1,33 +1,50 @@
 import { math } from 'cc';
 
 export class BlastCore {
+    private _height: number = 0
+    private _width: number = 0
+
+    constructor(size) {
+        this._height = size.height
+        this._width = size.width
+    }
+
     // перемешивание
-    shuffle(field: Array<Array<object>>): Array<Array<object>> {
+    shuffle(field: Array<object>): Array<object> {
         field.sort(() => math.random() - 0.5);
-        field.forEach((allRow, row) => {
-            allRow.forEach((cell, col) => {
-                Object.assign(cell, {row, col})
-            })
+        field.forEach((cell, index) => {
+             Object.assign(cell, {row: parseInt(index/this._width), col: index% this._width})
         })
         return field
     }
 
       // создание игрового пол€
-    createField(width: number, height: number, colors: Array<string>): Array<Array<object>> {
-        let field: Array<Array<object>> = []
-        for (let row = 0; row < height; row++) {
-            let allRow: Array<object> = []
-            for (let col = 0; col < width; col++) {
-                allRow.push(this.createNewTile(row, col, colors))
+    createField(colors: Array<string>): Array<object> {
+        let field: Array<object> = []
+        for (let row = 0; row < this._height; row++) {
+            for (let col = 0; col < this._width; col++) {
+                field.push(this.createNewTile(row, col, colors))
             }
-            field.push(allRow)
         }
         return field
     }
 
     // перемещение верхних тайлов на пустые места
-    moveTiles(field: Array<Array<object>>): Array<Array<object>> {
-        for (let row = field.length - 1; row > -1; row--) {
+    moveTiles(field: Array<object>): Array<object> {
+        field.reverse().forEach(tile => {
+            if (tile.removed) {
+                let movingTile: object = field.find(cell => !cell.removed && cell.col == tile.col && cell.row < tile.row) // поиск первого существующего тайла над удаленным, который переместитьс€ в пустую €чейку
+               
+                if (!movingTile)
+                    return
+
+                Object.assign(tile, { color: movingTile.color, prevRow: movingTile.row })
+                delete tile.removed
+                movingTile.bonus && (tile.bonus = true)
+                movingTile.removed = true
+            }
+        })
+        /*for (let row = field.length - 1; row > -1; row--) {
             field[row].forEach((tile, col) => {
                 if (tile == null) {
                     let movingTile: object
@@ -46,9 +63,9 @@ export class BlastCore {
                     field[movingTile.row][movingTile.col] = null
                 }
             })
-        }
+        }*/
 
-        return field
+        return field.reverse()
     }
 
     // создание нового тайла рандомного цвета
@@ -60,29 +77,27 @@ export class BlastCore {
         return colors[math.randomRangeInt(0, colors.length)]
     }
 
-    // удаление группы тайлов
-    removeTiles(field: Array<Array<object>>, tiles: Array<object>): Array<Array<object>> {
+    // пометка об удалении тайла группы тайлов
+    removeTiles(field: Array<object>, tiles: Array<object>): Array<object> {
         tiles.forEach(tile => {
-            field[tile.row][tile.col] = null
+            field.find(child => child.row == tile.row && child.col == tile.col).removed = true
         })
         return field
     }
 
     // проверка наличи€ ходов
-    checkMoves(field: Array<Array<object>>): Boolean {
+    checkMoves(field: Array<object>): Boolean {
         let hasMoves: Boolean = false
 
-        field.forEach(row => {
-            row.forEach(cell => {
-                this.findSiblingTiles(field, cell).length && (hasMoves = true)
-            })
+        field.forEach(cell => {
+            this.findSiblingTiles(field, cell).length && (hasMoves = true)
         })
 
         return hasMoves
     }
 
     // поиск группы тайлов по цвету
-    findGroupByColor(field: Array<Array<object>>, tile: object, group: Array<object> = [tile]): Array<object> {
+    findGroupByColor(field: Array<object>, tile: object, group: Array<object> = [tile]): Array<object> {
         let siblings: Array<object> = this.findSiblingTiles(field, tile)
 
         siblings.forEach(sibling => {
@@ -99,22 +114,22 @@ export class BlastCore {
     }
 
     // поиск группы тайлов по номеру колонки
-    findGroupInColumn(field: Array<Array<object>>, tile: object, group: Array<object> = [tile]): Array<object> {
-        field.forEach(row => {
-            group.push(row[tile.col])
-        })
+    findGroupInColumn(field: Array<object>, tile: object): Array<object> {
+        let group: Array<object> = []
+
+        group = field.filter(child => child.col == tile.col)
+
         return group
     }
 
     // поиск группы тайлов в заданном радиусе
-    findGroupByRadius(field: Array<Array<object>>, tile: object, radius: number, group: Array<object> = [tile]): Array<object>  {
-        field.forEach(row => {
-            row.forEach(cell => {
-                if (math.bits.abs(cell.row - tile.row) < radius && math.bits.abs(cell.col - tile.col) < radius) {
-                    group.push(cell)
-                }
-            })
+    findGroupByRadius(field: Array<object>, tile: object, radius: number, group: Array<object> = [tile]): Array<object>  {
+        field.forEach(cell => {
+            if (math.bits.abs(cell.row - tile.row) < radius && math.bits.abs(cell.col - tile.col) < radius) {
+                group.push(cell)
+            }
         })
+
         return group
     }
 
@@ -124,21 +139,29 @@ export class BlastCore {
     }
 
     // поиск соседних тайлов такого же цвета
-    findSiblingTiles(field: Array<Array<object>>, tile: object): Array<object> {
+    findSiblingTiles(field: Array<object>, tile: object): Array<object> {
         let siblings: Array<object> = []
-        let tileColor: string = field[tile.row][tile.col].color
+        let tileColor: string = tile.color
+        let currentTile = field.find(child => child.row == tile.row - 1 && child.col == tile.col)
 
-        if (tile.row > 0 && field[tile.row - 1][tile.col].color == tileColor)
-            siblings.push(field[tile.row - 1][tile.col])
+        let checkCurrentTile = () => {
+            if (currentTile && currentTile.color == tileColor)
+                siblings.push(currentTile)
+        }
 
-        if (tile.col > 0 && field[tile.row][tile.col - 1].color == tileColor)
-            siblings.push(field[tile.row][tile.col - 1])
+        checkCurrentTile()
 
-        if (tile.col < field[tile.row].length - 1 && field[tile.row][tile.col + 1].color == tileColor)
-            siblings.push(field[tile.row][tile.col + 1])
+        currentTile = field.find(child => child.row == tile.row && child.col == tile.col - 1)
 
-        if (tile.row < field.length - 1 && field[tile.row + 1][tile.col].color == tileColor)
-            siblings.push(field[tile.row + 1][tile.col])
+        checkCurrentTile()
+
+        currentTile = field.find(child => child.row == tile.row && child.col == tile.col + 1)
+
+        checkCurrentTile()
+
+        currentTile = field.find(child => child.row == tile.row + 1 && child.col == tile.col)
+
+        checkCurrentTile()
 
         return siblings
     }
