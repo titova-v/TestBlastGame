@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, game, Sprite, Color } from 'cc';
+import { _decorator, Component, Node, game, ParticleSystem2D } from 'cc';
 import { EVENTS } from './gameConfig';
 const { ccclass, property } = _decorator;
 
@@ -8,11 +8,11 @@ export class Tile extends Component {
         this.initListener()
     }
 
-    makeBonus() {
-       this.getComponent(Sprite).grayscale = true
+    makeBonus(): void {
+        this.node.getChildByName('parts').getComponent(ParticleSystem2D).resetSystem()
     }
 
-    initListener() {
+    initListener(): void {
         this.node.on(Node.EventType.TOUCH_START, () => {
             game.emit(EVENTS.tileOnClick, this.node)
         })

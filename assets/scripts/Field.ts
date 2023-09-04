@@ -83,20 +83,32 @@ export class Field extends Component {
     }
 
     // удаление группы тайлов
-    destroyGroup(group: Array<object>): void {
+    destroyGroup(group: Array<object>): Promise<any> {
+        let removingTiles: Array<Promise<any>> = []
+
         group.forEach(tile => {
             const tileNode = this.node.children.find(child => child.row == tile.row && child.col == tile.col)
-            this.removeTileNode(tileNode)
+            removingTiles.push(this.removeTileNode(tileNode))
         })
-        this.field = this.coreBlast.removeTiles(this.field, group)
+
+        return new Promise(resolve => Promise.all(removingTiles).then(() => {this.field = this.coreBlast.removeTiles(this.field, group)}).then(resolve))
     }
 
     // удаление спрайта тайла с анимацией
-    removeTileNode(tile: Node) {
-        tween(tile)
-            .to(.1, { scale: new Vec3(0, 0, 0) }, {easing: 'quadOut'})
-            .call(() => tile.removeFromParent())
-            .start()
+    removeTileNode(tile: Node): Promise<any> {
+        const spriteOpacity = tile.getComponent(UIOpacity)
+
+        return new Promise(resolve =>
+            tween(tile)
+                .call(() => {
+                    tween(spriteOpacity)
+                        .to(DURATIONS.tileHide, { opacity: 0 }, { easing: 'sineInOut' })
+                        .start()
+                })
+                .to(DURATIONS.tileHide, { scale: new Vec3(0, 0, 0), angle: -120 }, { easing: 'sineInOut' })
+                .call(() => tile.removeFromParent())
+                .call(resolve)
+                .start())
     }
 
     // анимаци€ мигани€ тайла
@@ -111,7 +123,7 @@ export class Field extends Component {
     }
 
     // перемещение тайлов на пустые €чейки
-    moveTilesNodes() {
+    moveTilesNodes(): Promise<any> {
         return new Promise(resolve => {
             let allMoves = []
             for (let row = this.field.length - 1; row > -1; row--) {
@@ -131,7 +143,7 @@ export class Field extends Component {
     }
 
     // создание бонусного тайла
-    createBonusTile(tile: Node) {
+    createBonusTile(tile: Node): void {
         tile.bonus = true
         this.field[tile.row][tile.col].bonus = true
 
@@ -153,19 +165,18 @@ export class Field extends Component {
         return this.coreBlast.checkMoves(this.field)
     }
 
-    // выполнение хода (разрушение тайлов -> передвижение -> заполнение пробелов)
-    makeMove(group) {
-        this.destroyGroup(group)
-
+    // выполнение хода (разрушение тайлов -> передвижение существующих тайлов на пустые €чейки -> заполнение пустых €чеек новыми тайлами)
+    makeMove(group): Promise<any> {
         return new Promise(resolve => {
-            this.moveExistingTiles()
+            this.destroyGroup(group)
+                .then(this.moveExistingTiles.bind(this))
                 .then(this.fillEmptyCells.bind(this))
                 .then(resolve)
         })       
     }
 
     // передвижение существующих тайлов
-    moveExistingTiles() {
+    moveExistingTiles(): Promise<any> {
         this.field = this.coreBlast.moveTiles(this.field)
 
         return new Promise(resolve => {
@@ -174,7 +185,7 @@ export class Field extends Component {
     }
 
     // анимаци€ передвижени€ тайлов
-    moveTile(tile: Node) {
+    moveTile(tile: Node): Promise<any> {
         const path = tile.row - tile.prevRow
         const position = new Vec3(tile.position.x, TILE_SIZE.HEIGHT * this.fieldHeight - (tile.row + .5) * TILE_SIZE.HEIGHT + FIELD_MARGIN_Y, 0)
 
@@ -185,7 +196,7 @@ export class Field extends Component {
     }
 
     // заполнение пустых €чеек новыми тайлами
-    fillEmptyCells() {
+    fillEmptyCells(): Promise<any> {
         return new Promise(resolve => {
             let allMoves: Array<any> = []
             let delayIndex = 0
@@ -210,12 +221,12 @@ export class Field extends Component {
                 rowHasEmptyTiles && delayIndex++
             }
 
-            Promise.all(allMoves).then(resolve)
+            Promise.all(allMoves).then(resolve) // ожидание выполнени€ всех анимаций перемещени€ новых тайлов на пустые €чейки
         })
     }
 
     // перемешивание тайлов
-    shuffle() {
+    shuffle(): void {
         this.field = this.coreBlast.shuffle(this.field)
         
         this.node.removeAllChildren()

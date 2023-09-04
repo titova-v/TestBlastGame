@@ -1,8 +1,8 @@
 import { _decorator, Component, Node, game, Label, tween, Vec3, director } from 'cc';
-import { DURATIONS, EVENTS, MIN_POINTS_COUNT, MIN_TILES_COUNT_IN_GROUP, BONUS_TILE_GROUP_SIZE, MAX_SHUFFLE_COUNT } from './gameConfig';
+import { EVENTS, MIN_POINTS_COUNT, MIN_TILES_COUNT_IN_GROUP, BONUS_TILE_GROUP_SIZE, MAX_SHUFFLE_COUNT } from './gameConfig';
 import { Field } from './Field';
-import { Score } from './Score';
-import { Bomb } from './Bomb';
+import { BombPanel } from './BombPanel';
+import { ScoreController } from './ScoreController';
 const { ccclass, property } = _decorator;
 
 
@@ -10,10 +10,10 @@ const { ccclass, property } = _decorator;
 export class GameController extends Component {
     @property(Field)
     field: Field
-    @property(Score)
-    score: Score
-    @property(Bomb)
-    bomb: Bomb
+    @property(ScoreController)
+    score: ScoreController
+    @property(BombPanel)
+    bomb: BombPanel
 
     private shufflesCount: number = 0
 
@@ -21,7 +21,7 @@ export class GameController extends Component {
         this.initListener()
     }
 
-    initListener() {
+    initListener(): void {
         game.on(EVENTS.tileOnClick, tile => this.onTileClick(tile))
         game.on(EVENTS.bombOnClick, () => this.switchBomb())
     }
@@ -55,7 +55,7 @@ export class GameController extends Component {
                     this.unlockCtrl()
                 }
             })
-            this.score.updateLabels(tilesCount)
+            this.score.updateScore(tilesCount)
         }
         else {
             this.falseMove(tile)
@@ -63,13 +63,13 @@ export class GameController extends Component {
         }
     }
 
-    updateBombsCount() {
-        this.bomb.decrementBombs()
+    updateBombsCount(): void {
+        this.bomb.decrementCount()
         this.bomb.updateLabel()
     }
 
     // проверка наличия ходов и решафл
-    checkEnableMoves() {
+    checkEnableMoves(): void {
         if (this.shufflesCount >= MAX_SHUFFLE_COUNT)
             this.showFailScene()
         else if (!this.field.checkMoves()) {
@@ -79,7 +79,7 @@ export class GameController extends Component {
     }
 
     // проверка наличия ходов и достижения цели игры
-    checkGameProgress() {
+    checkGameProgress(): Boolean {
         if (this.score.movesCount == 0 && this.score.scoreCount < MIN_POINTS_COUNT) {
             this.showFailScene()
             return false
@@ -93,17 +93,17 @@ export class GameController extends Component {
     }
 
     // переключение сцены в случае фейла
-    showFailScene() {
+    showFailScene(): void {
         director.loadScene('failScene')
     }
 
     // переключение сцены в случае выигрыша
-    showWinScene() {
+    showWinScene(): void {
         director.loadScene('winScene')
     }
 
     // вкл/выкл активации бомбы
-    switchBomb() {
+    switchBomb(): void {
         if (this.bomb.count)
             this.bomb.active = !this.bomb.active
         
@@ -114,14 +114,14 @@ export class GameController extends Component {
     }
 
     // принудительное отключение бомбы (после выполнения хода)
-    deactivateBomb() {
+    deactivateBomb(): void {
         this.bomb.active = false
 
         this.stopBombIconAnimation()
     }
 
     // анимация иконки бомбы
-    startBombIconAnimation() {
+    startBombIconAnimation(): void {
         if (!this.bomb.iconAnimation) {
             let bombIcon = this.bomb.icon
             let bombScale = bombIcon.scale.x
@@ -135,12 +135,12 @@ export class GameController extends Component {
         this.bomb.iconAnimation.start()
     }
 
-    stopBombIconAnimation() {
+    stopBombIconAnimation(): void {
         this.bomb.iconAnimation && this.bomb.iconAnimation.stop()
         this.bomb.icon.scale = this.bomb.icon.defaultScale
     }
 
-    falseMove(tile: Node) {
+    falseMove(tile: Node): void {
         this.field.blinkTile(tile)
     }
 

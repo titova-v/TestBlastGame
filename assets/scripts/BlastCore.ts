@@ -31,7 +31,7 @@ export class BlastCore {
             field[row].forEach((tile, col) => {
                 if (tile == null) {
                     let movingTile: object
-                    for (let targetRow = row - 1; targetRow > -1; targetRow--) {
+                    for (let targetRow = row - 1; targetRow > -1; targetRow--) { // поиск первого существующего тайла над удаленным, который переместитьс€ в пустую €чейку
                         let iterationTile = field[targetRow][col]
                         if (iterationTile && !iterationTile.removed) {
                             movingTile = iterationTile
@@ -86,7 +86,7 @@ export class BlastCore {
         let siblings: Array<object> = this.findSiblingTiles(field, tile)
 
         siblings.forEach(sibling => {
-            if (!this.groupContainTile(group, sibling)) {
+            if (!this.groupContainTile(group, sibling)) { // поиск соседних тайлов того же цвета дл€ каждого нового соседнего тайла
                 group.push(sibling)
                 this.findGroupByColor(field, sibling, group).forEach(nextSibling => {
                     if (!this.groupContainTile(group, nextSibling))
